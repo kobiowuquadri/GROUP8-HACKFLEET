@@ -4,67 +4,109 @@ const express = require("express");
 const favicon = require("serve-favicon");
 const bodyParser = require("body-parser");
 const session = require("express-session");
-// const csrf = require('csurf');
+const csrf = require('csurf');
 const consolidate = require("consolidate"); // Templating library adapter for Express
 const swig = require("swig");
-// const helmet = require("helmet");
+const helmet = require("helmet");
 const MongoClient = require("mongodb").MongoClient; // Driver for connecting to MongoDB
 const http = require("http");
-const marked = require("marked");
-//const nosniff = require('dont-sniff-mimetype');
-const app = express(); // Web framework to handle routing requests
-const routes = require("./app/routes");
-const { port, db, cookieSecret } = require("./config/config"); // Application config properties
-/*
-// Fix for A6-Sensitive Data Exposure
-// Load keys for establishing secure HTTPS connection
-const fs = require("fs");
 const https = require("https");
+const fs = require("fs");
 const path = require("path");
+const marked = require("marked");
+const nosniff = require('dont-sniff-mimetype');
+
+// Import security middleware
+const { 
+    apiLimiter, 
+    authLimiter, 
+    errorHandler, 
+    validateRequest,
+    securityHeaders 
+} = require('./app/middleware/security');
+
+const { securityLogger } = require('./app/utils/logger');
+
+const app = express(); 
+const routes = require("./app/routes");
+const { port, db, cookieSecret, mongoUser, mongoPass } = require("./config/config");
+
+// Load SSL certificates
 const httpsOptions = {
     key: fs.readFileSync(path.resolve(__dirname, "./artifacts/cert/server.key")),
-    cert: fs.readFileSync(path.resolve(__dirname, "./artifacts/cert/server.crt"))
+    cert: fs.readFileSync(path.resolve(__dirname, "./artifacts/cert/server.crt")),
+    // Additional SSL security settings
+    minVersion: 'TLSv1.2',
+    ciphers: [
+        'ECDHE-ECDSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES128-GCM-SHA256',
+        'ECDHE-ECDSA-AES256-GCM-SHA384',
+        'ECDHE-RSA-AES256-GCM-SHA384',
+        'DHE-RSA-AES128-GCM-SHA256',
+        'DHE-RSA-AES256-GCM-SHA384'
+    ].join(':'),
+    honorCipherOrder: true,
+    secureOptions: require('constants').SSL_OP_NO_SSLv3 | require('constants').SSL_OP_NO_TLSv1 | require('constants').SSL_OP_NO_TLSv1_1
 };
-*/
 
-MongoClient.connect(db, (err, db) => {
+// MongoDB connection options
+const mongoOptions = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    // Write concern configuration
+    writeConcern: {
+        w: 'majority',
+        wtimeout: 10000,
+        j: true
+    },
+    // Connection settings
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    // Connection pool settings
+    maxPoolSize: 10,
+    minPoolSize: 2,
+    maxIdleTimeMS: 60000,
+    // MongoDB Atlas specific settings
+    retryWrites: true,
+    retryReads: true
+};
+
+// Add SSL configuration if certificates exist
+if (process.env.MONGO_SSL === 'true') {
+    try {
+        mongoOptions.ssl = true;
+        mongoOptions.sslValidate = true;
+        mongoOptions.sslCA = fs.readFileSync(path.resolve(__dirname, process.env.MONGO_SSL_CA || "./artifacts/cert/mongodb.pem"));
+    } catch (err) {
+        console.warn('MongoDB SSL configuration skipped - certificates not found');
+        securityLogger.logSecurityEvent('MongoDB SSL skipped', { reason: 'Certificates not found' });
+    }
+}
+
+// Connect to MongoDB with proper error handling
+MongoClient.connect(db, mongoOptions, (err, client) => {
     if (err) {
-        console.log("Error: DB: connect");
-        console.log(err);
+        securityLogger.logError(err, 'Database connection');
+        console.error('MongoDB connection error:', err);
         process.exit(1);
     }
-    console.log(`Connected to the database`);
 
-    /*
-    // Fix for A5 - Security MisConfig
-    // TODO: Review the rest of helmet options, like "xssFilter"
-    // Remove default x-powered-by response header
-    app.disable("x-powered-by");
+    const db = client.db('nodegoat');
+    console.log('Connected to MongoDB successfully');
 
-    // Prevent opening page in frame or iframe to protect from clickjacking
-    app.use(helmet.frameguard()); //xframe deprecated
+    // Verify database connection
+    db.command({ ping: 1 }, (err) => {
+        if (err) {
+            securityLogger.logError(err, 'Database ping');
+            console.error('MongoDB ping failed:', err);
+            process.exit(1);
+        }
+        console.log('MongoDB connection verified');
+    });
 
-    // Prevents browser from caching and storing page
-    app.use(helmet.noCache());
-
-    // Allow loading resources only from white-listed domains
-    app.use(helmet.contentSecurityPolicy()); //csp deprecated
-
-    // Allow communication only on HTTPS
-    app.use(helmet.hsts());
-
-    // TODO: Add another vuln: https://github.com/helmetjs/helmet/issues/26
-    // Enable XSS filter in IE (On by default)
-    // app.use(helmet.iexss());
-    // Now it should be used in hit way, but the README alerts that could be
-    // dangerous, like specified in the issue.
-    // app.use(helmet.xssFilter({ setOnOldIE: true }));
-
-    // Forces browser to only use the Content-Type set in the response header instead of sniffing or guessing it
+    // Apply security middleware
+    app.use(securityHeaders);
     app.use(nosniff());
-    */
-
-    // Adding/ remove HTTP Headers for security
     app.use(favicon(__dirname + "/app/assets/favicon.ico"));
 
     // Express middleware to populate "req.body" so we can access POST variables
@@ -76,55 +118,83 @@ MongoClient.connect(db, (err, db) => {
 
     // Enable session management using express middleware
     app.use(session({
-        // genid: (req) => {
-        //    return genuuid() // use UUIDs for session IDs
-        //},
         secret: cookieSecret,
-        // Both mandatory in Express v4
-        saveUninitialized: true,
-        resave: true
-        /*
-        // Fix for A5 - Security MisConfig
-        // Use generic cookie name
-        key: "sessionId",
-        */
-
-        /*
-        // Fix for A3 - XSS
-        // TODO: Add "maxAge"
+        name: 'sessionId',
+        saveUninitialized: false,
+        resave: false,
         cookie: {
-            httpOnly: true
-            // Remember to start an HTTPS server to get this working
-            // secure: true
-        }
-        */
-
+            httpOnly: true,
+            secure: true,
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            sameSite: 'strict',
+            path: '/',
+            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
+        },
+        rolling: true, // Reset maxAge on every response
+        proxy: true, // Trust the reverse proxy
+        unset: 'destroy' // Destroy session when unset
     }));
 
-    /*
-    // Fix for A8 - CSRF
-    // Enable Express csrf protection
-    app.use(csrf());
-    // Make csrf token available in templates
+    // Session fixation protection
     app.use((req, res, next) => {
-        res.locals.csrftoken = req.csrfToken();
+        if (!req.session.regenerate) {
+            req.session.regenerate = (cb) => {
+                cb();
+            };
+        }
+        if (!req.session.save) {
+            req.session.save = (cb) => {
+                cb();
+            };
+        }
         next();
     });
-    */
+
+    // Session activity tracking
+    app.use((req, res, next) => {
+        if (req.session.lastActivity) {
+            const idleTime = Date.now() - req.session.lastActivity;
+            if (idleTime > 30 * 60 * 1000) { // 30 minutes
+                req.session.destroy();
+                return res.redirect('/login');
+            }
+        }
+        req.session.lastActivity = Date.now();
+        next();
+    });
+
+    // Enable CSRF protection
+    app.use(csrf());
+    app.use((req, res, next) => {
+        res.locals.csrfToken = req.csrfToken();
+        next();
+    });
+
+    // Apply rate limiting
+    app.use('/api/', apiLimiter);
+    app.use('/auth/', authLimiter);
 
     // Register templating engine
     app.engine(".html", consolidate.swig);
     app.set("view engine", "html");
     app.set("views", `${__dirname}/app/views`);
-    // Fix for A5 - Security MisConfig
-    // TODO: make sure assets are declared before app.use(session())
     app.use(express.static(`${__dirname}/app/assets`));
 
-
-    // Initializing marked library
-    // Fix for A9 - Insecure Dependencies
+    // Configure marked for secure markdown processing
     marked.setOptions({
-        sanitize: true
+        sanitize: true,
+        sanitizer: (text) => {
+            return text.replace(/[&<>"']/g, (match) => {
+                const escape = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                };
+                return escape[match];
+            });
+        }
     });
     app.locals.marked = marked;
 
@@ -133,12 +203,8 @@ MongoClient.connect(db, (err, db) => {
 
     // Template system setup
     swig.setDefaults({
-        // Autoescape disabled
-        autoescape: false
-        /*
-        // Fix for A3 - XSS, enable auto escaping
-        autoescape: true // default value
-        */
+        autoescape: true,
+        cache: false
     });
 
     // Health check endpoint
@@ -146,17 +212,36 @@ MongoClient.connect(db, (err, db) => {
         res.status(200).json({ status: 'ok' });
     });
 
-    // Insecure HTTP connection
-    http.createServer(app).listen(port, () => {
-        console.log(`Express http server listening on port ${port}`);
+    // Error handling
+    app.use(errorHandler);
+
+    // Redirect HTTP to HTTPS with HSTS
+    const httpApp = express();
+    httpApp.use(helmet.hsts({
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }));
+    httpApp.get('*', (req, res) => {
+        res.redirect(`https://${req.headers.host}${req.url}`);
+    });
+    http.createServer(httpApp).listen(80);
+
+    // Start HTTPS server with additional security headers
+    const httpsServer = https.createServer(httpsOptions, app);
+    httpsServer.listen(port, () => {
+        console.log(`Express https server listening on port ${port}`);
     });
 
-    /*
-    // Fix for A6-Sensitive Data Exposure
-    // Use secure HTTPS protocol
-    https.createServer(httpsOptions, app).listen(port, () => {
-        console.log(`Express http server listening on port ${port}`);
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (err) => {
+        securityLogger.logError(err, 'Uncaught Exception');
+        process.exit(1);
     });
-    */
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+        securityLogger.logError(reason, 'Unhandled Rejection');
+    });
 
 });

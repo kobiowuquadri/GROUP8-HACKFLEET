@@ -123,12 +123,16 @@ function SessionHandler(db) {
     };
 
     this.displaySignupPage = (req, res) => {
-        res.render("signup", {
+        return res.render("signup", {
             userName: "",
+            firstName: "",
+            lastName: "",
             password: "",
             passwordError: "",
             email: "",
             userNameError: "",
+            firstNameError: "",
+            lastNameError: "",
             emailError: "",
             verifyError: "",
             environmentalScripts
