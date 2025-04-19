@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcrypt-nodejs");
 
 /* The UserDAO must be constructed with a connected database object */
 function UserDAO(db) {
@@ -18,9 +18,9 @@ function UserDAO(db) {
 
         // Create user document
         const user = {
-            userName: userName,
-            firstName: firstName,
-            lastName: lastName,
+            userName,
+            firstName,
+            lastName,
             benefitStartDate: this.getRandomFutureDate(),
         
             password: bcrypt.hashSync(password, bcrypt.genSaltSync())
