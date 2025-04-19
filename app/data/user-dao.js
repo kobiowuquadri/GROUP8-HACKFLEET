@@ -22,8 +22,8 @@ function UserDAO(db) {
             firstName: firstName,
             lastName: lastName,
             benefitStartDate: this.getRandomFutureDate(),
-            email: email,
-            password: bcrypt.hashSync(password, 10) // Using bcrypt's hashSync with salt rounds
+        
+            password: bcrypt.hashSync(password, bcrypt.genSaltSync())
         };
 
         // Add email if set
@@ -53,7 +53,9 @@ function UserDAO(db) {
     this.validateLogin = (userName, password, callback) => {
 
         // Helper function to compare passwords
-        const comparePassword = (fromUser, fromDB) => {
+        const comparePassword = (fromDB, fromUser) => {
+            // Fix for A2-Broken Auth
+            // compares decrypted password stored in this.addUser()
             return bcrypt.compareSync(fromUser, fromDB);
         };
 
@@ -63,7 +65,7 @@ function UserDAO(db) {
             if (err) return callback(err, null);
 
             if (user) {
-                if (comparePassword(password, user.password)) {
+                if (comparePassword(user.password, password)) {
                     callback(null, user);
                 } else {
                     const invalidPasswordError = new Error("Invalid password");
@@ -98,16 +100,22 @@ function UserDAO(db) {
     };
 
     this.getNextSequence = (name, callback) => {
-        db.collection("counters").findAndModify({
-                _id: name
-            }, [], {
-                $inc: {
-                    seq: 1
-                }
-            }, {
-                new: true
+        db.collection("counters").findOneAndUpdate(
+            { _id: name },
+            { $inc: { seq: 1 } },
+            { 
+                returnDocument: 'after',
+                upsert: true
             },
-            (err, data) =>  err ? callback(err, null) : callback(null, data.value.seq));
+            (err, data) => {
+                if (err) return callback(err, null);
+                if (!data.value) {
+                    // If no document exists, create one with seq = 1
+                    return callback(null, 1);
+                }
+                callback(null, data.value.seq);
+            }
+        );
     };
 }
 
