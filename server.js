@@ -4,7 +4,7 @@ const express = require("express");
 const favicon = require("serve-favicon");
 const bodyParser = require("body-parser");
 const session = require("express-session");
-const csrf = require('csurf');
+const csurf = require('csurf');
 const consolidate = require("consolidate"); // Templating library adapter for Express
 const swig = require("swig");
 const helmet = require("helmet");
@@ -15,6 +15,7 @@ const fs = require("fs");
 const path = require("path");
 const marked = require("marked");
 const nosniff = require('dont-sniff-mimetype');
+const expressLayouts = require('express-ejs-layouts');
 
 // Import security middleware
 const { 
@@ -120,19 +121,19 @@ MongoClient.connect(db, mongoOptions, (err, client) => {
     app.use(session({
         secret: cookieSecret,
         name: 'sessionId',
-        saveUninitialized: false,
-        resave: false,
+        saveUninitialized: true,
+        resave: true,
         cookie: {
             httpOnly: true,
             secure: true,
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            sameSite: 'strict',
+            sameSite: 'lax',
             path: '/',
             domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
         },
         rolling: true, // Reset maxAge on every response
         proxy: true, // Trust the reverse proxy
-        unset: 'destroy' // Destroy session when unset
+        unset: 'keep'
     }));
 
     // Session fixation protection
@@ -164,7 +165,7 @@ MongoClient.connect(db, mongoOptions, (err, client) => {
     });
 
     // Enable CSRF protection
-    app.use(csrf());
+    app.use(csurf());
     app.use((req, res, next) => {
         res.locals.csrfToken = req.csrfToken();
         next();
@@ -175,10 +176,19 @@ MongoClient.connect(db, mongoOptions, (err, client) => {
     app.use('/auth/', authLimiter);
 
     // Register templating engine
-    app.engine(".html", consolidate.swig);
-    app.set("view engine", "html");
-    app.set("views", `${__dirname}/app/views`);
+    app.set('view engine', 'ejs');
+    app.set('views', path.join(__dirname, 'app/views'));
+    app.use(expressLayouts);
+    app.set('layout', 'layout');
+    app.set("layout extractScripts", true);
+    app.set("layout extractStyles", true);
+    
+    // Serve static files
     app.use(express.static(`${__dirname}/app/assets`));
+    app.use('/vendor', express.static(`${__dirname}/app/assets/vendor`));
+    app.use('/vendor/theme', express.static(`${__dirname}/app/assets/vendor/theme`));
+    app.use('/vendor/chart', express.static(`${__dirname}/app/assets/vendor/chart`));
+    app.use('/vendor/bootstrap', express.static(`${__dirname}/app/assets/vendor/bootstrap`));
 
     // Configure marked for secure markdown processing
     marked.setOptions({

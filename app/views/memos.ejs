@@ -1,15 +1,15 @@
-{% extends "./layout.html" %} {% block title %}Memos{% endblock %} {% block content %}
+<%- include('layout', { title: 'Memos' }) %>
 
 <div class="row">
     <div class="col-lg-12">
-        {% if error %}
+        <% if (error) { %>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>Error:</strong> {{error}}
+            <strong>Error:</strong> <%= error %>
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
-        {% endif %}
+        <% } %>
 
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -25,34 +25,33 @@
                         <textarea class="form-control" id="memo" name="memo" rows="5" required></textarea>
                         <small class="form-text text-muted">You may use Markdown syntax to format your memo</small>
                     </div>
-                    <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
             </div>
         </div>
 
-        {% if memosList and memosList.length > 0 %}
-            {% for doc in memosList %}
+        <% if (memosList && memosList.length > 0) { %>
+            <% memosList.forEach(function(doc) { %>
             <div class="panel panel-info" style="margin-top: 20px;">
                 <div class="panel-body">
-                    {% if doc.formattedMemo %}
+                    <% if (doc.formattedMemo) { %>
                         <div class="memo-content">
-                            {{ doc.formattedMemo | safe }}
+                            <%- doc.formattedMemo %>
                         </div>
-                    {% else %}
+                    <% } else { %>
                         <p class="text-muted">No memo content available</p>
-                    {% endif %}
+                    <% } %>
                 </div>
                 <div class="panel-footer">
-                    <small class="text-muted">Posted on {{ doc.timestamp }}</small>
+                    <small class="text-muted">Posted on <%= doc.timestamp %></small>
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
+            <% }); %>
+        <% } else { %>
             <div class="alert alert-info" role="alert">
                 No memos found. Be the first to post one!
             </div>
-        {% endif %}
+        <% } %>
     </div>
-</div>
-{% endblock %}
+</div> 
