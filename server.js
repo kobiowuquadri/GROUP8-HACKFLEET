@@ -120,19 +120,19 @@ MongoClient.connect(db, mongoOptions, (err, client) => {
     app.use(session({
         secret: cookieSecret,
         name: 'sessionId',
-        saveUninitialized: false,
-        resave: false,
+        saveUninitialized: true,
+        resave: true,
         cookie: {
             httpOnly: true,
             secure: true,
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            sameSite: 'strict',
+            sameSite: 'lax',
             path: '/',
             domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
         },
         rolling: true, // Reset maxAge on every response
         proxy: true, // Trust the reverse proxy
-        unset: 'destroy' // Destroy session when unset
+        unset: 'keep'
     }));
 
     // Session fixation protection
@@ -178,7 +178,13 @@ MongoClient.connect(db, mongoOptions, (err, client) => {
     app.engine(".html", consolidate.swig);
     app.set("view engine", "html");
     app.set("views", `${__dirname}/app/views`);
+    
+    // Serve static files
     app.use(express.static(`${__dirname}/app/assets`));
+    app.use('/vendor', express.static(`${__dirname}/app/assets/vendor`));
+    app.use('/vendor/theme', express.static(`${__dirname}/app/assets/vendor/theme`));
+    app.use('/vendor/chart', express.static(`${__dirname}/app/assets/vendor/chart`));
+    app.use('/vendor/bootstrap', express.static(`${__dirname}/app/assets/vendor/bootstrap`));
 
     // Configure marked for secure markdown processing
     marked.setOptions({

@@ -13,27 +13,41 @@ function MemosDAO(db) {
     const memosCol = db.collection("memos");
 
     this.insert = (memo, callback) => {
+        if (!memo || typeof memo !== 'string') {
+            return callback(new Error("Invalid memo content"), null);
+        }
 
-        // Create allocations document
-        const memos = {
-            memo,
+        // Create memo document
+        const memoDoc = {
+            memo: memo,
             timestamp: new Date()
         };
 
-        memosCol.insert(memos, (err, result) => !err ? callback(null, result) : callback(err, null));
-    };
-
-    this.getAllMemos = (callback) => {
-
-        memosCol.find({}).sort({
-            timestamp: -1
-        }).toArray((err, memos) => {
-            if (err) return callback(err, null);
-            if (!memos) return callback("ERROR: No memos found", null);
-            callback(null, memos);
+        memosCol.insertOne(memoDoc, (err, result) => {
+            if (err) {
+                console.error("Error inserting memo:", err);
+                return callback(new Error("Failed to save memo. Please try again."), null);
+            }
+            callback(null, result);
         });
     };
 
+    this.getAllMemos = (callback) => {
+        memosCol.find({})
+            .sort({ timestamp: -1 })
+            .toArray((err, memos) => {
+                if (err) {
+                    console.error("Error retrieving memos:", err);
+                    return callback(new Error("Failed to retrieve memos. Please try again."), null);
+                }
+                // Ensure each memo has the required properties
+                const processedMemos = (memos || []).map(memo => ({
+                    memo: memo.memo || '',
+                    timestamp: memo.timestamp || new Date()
+                }));
+                callback(null, processedMemos);
+            });
+    };
 }
 
-module.exports = { MemosDAO };
+module.exports = { MemosDAO };

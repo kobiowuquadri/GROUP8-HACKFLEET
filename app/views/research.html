@@ -2,6 +2,14 @@
 
 <div class="row">
     <div class="col-lg-12">
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> {{error}}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endif %}
 
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -11,20 +19,37 @@
             </div>
 
             <div class="panel-body">
-
                 <form action="/research" method="get" role="search">
                     <div class="form-group">
-                        <input type="hidden" id="url" name="url" value="https://finance.yahoo.com/quote/"/>
-                        <input type="text" class="form-control" placeholder="Stock Symbol" name="symbol" />
-                        <p class="help-block">Enter Stock Symbol.</p>
+                        <label for="symbol">Stock Symbol</label>
+                        <input type="text" class="form-control" id="symbol" name="symbol" value="{{symbol}}" placeholder="e.g. AAPL, GOOGL, MSFT" required />
+                        <small class="form-text text-muted">Enter a valid stock symbol to view information</small>
                     </div>
-
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="submit" class="btn btn-primary">Search</button>
                 </form>
 
+                {% if stockInfo %}
+                <div class="panel panel-info" style="margin-top: 20px;">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">{{stockInfo.name}} ({{stockInfo.symbol}})</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>Current Price: {{stockInfo.price}}</h4>
+                                <h4>Change: {{stockInfo.change}}</h4>
+                                <h4>Market Cap: {{stockInfo.marketCap}}</h4>
+                            </div>
+                            <div class="col-md-6">
+                                <p>View detailed information on <a href="{{stockInfo.url}}" target="_blank">Yahoo Finance</a></p>
+                                <p><small>Note: You will be redirected to Yahoo Finance for detailed stock information.</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
-
     </div>
 </div>
 {% endblock %}
