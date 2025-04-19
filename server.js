@@ -141,6 +141,11 @@ MongoClient.connect(db, (err, db) => {
         */
     });
 
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+        res.status(200).json({ status: 'ok' });
+    });
+
     // Insecure HTTP connection
     http.createServer(app).listen(port, () => {
         console.log(`Express http server listening on port ${port}`);

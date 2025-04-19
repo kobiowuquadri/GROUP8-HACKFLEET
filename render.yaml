@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: nodegoat
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: MONGODB_URI
+        sync: false
+    autoDeploy: true 
