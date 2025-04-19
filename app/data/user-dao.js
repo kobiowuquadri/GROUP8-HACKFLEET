@@ -22,12 +22,8 @@ function UserDAO(db) {
             firstName,
             lastName,
             benefitStartDate: this.getRandomFutureDate(),
-            password //received from request param
-            /*
-            // Fix for A2-1 - Broken Auth
-            // Stores password  in a safer way using one way encryption and salt hashing
+        
             password: bcrypt.hashSync(password, bcrypt.genSaltSync())
-            */
         };
 
         // Add email if set
@@ -58,12 +54,9 @@ function UserDAO(db) {
 
         // Helper function to compare passwords
         const comparePassword = (fromDB, fromUser) => {
-            return fromDB === fromUser;
-            /*
             // Fix for A2-Broken Auth
             // compares decrypted password stored in this.addUser()
-            return bcrypt.compareSync(fromDB, fromUser);
-            */
+            return bcrypt.compareSync(fromUser, fromDB);
         };
 
         // Callback to pass to MongoDB that validates a user document
@@ -72,7 +65,7 @@ function UserDAO(db) {
             if (err) return callback(err, null);
 
             if (user) {
-                if (comparePassword(password, user.password)) {
+                if (comparePassword(user.password, password)) {
                     callback(null, user);
                 } else {
                     const invalidPasswordError = new Error("Invalid password");
@@ -107,17 +100,23 @@ function UserDAO(db) {
     };
 
     this.getNextSequence = (name, callback) => {
-        db.collection("counters").findAndModify({
-                _id: name
-            }, [], {
-                $inc: {
-                    seq: 1
-                }
-            }, {
-                new: true
+        db.collection("counters").findOneAndUpdate(
+            { _id: name },
+            { $inc: { seq: 1 } },
+            { 
+                returnDocument: 'after',
+                upsert: true
             },
-            (err, data) =>  err ? callback(err, null) : callback(null, data.value.seq));
+            (err, data) => {
+                if (err) return callback(err, null);
+                if (!data.value) {
+                    // If no document exists, create one with seq = 1
+                    return callback(null, 1);
+                }
+                callback(null, data.value.seq);
+            }
+        );
     };
 }
 
-module.exports = { UserDAO };
+module.exports = { UserDAO };

@@ -98,23 +98,23 @@
                             {% if loginError %}
                             <div class="alert alert-dismissable alert-danger">
                                 <button type="button" class="close" data-dismiss="alert">&times;</button>
-                                {{loginError}}
+                                <strong>Error:</strong> {{loginError}}
                             </div>
                             {% endif %}
 
 
 
-                            <form method="post" role="form" method="post" id="loginform">
+                            <form method="post" role="form" method="post" id="loginform" onsubmit="return validateForm()">
                                 <div class="form-group">
                                     <label for="userName">User Name</label>
-                                    <input type="text" class="form-control" id="userName" name="userName" value="{{userName}}" placeholder="Enter User Name">
+                                    <input type="text" class="form-control" id="userName" name="userName" value="{{userName}}" placeholder="Enter User Name" required>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="password">Password</label>
-                                    <input type="password" class="form-control" id="password" name="password" value="{{password}}" placeholder="Enter Password">
+                                    <input type="password" class="form-control" id="password" name="password" value="{{password}}" placeholder="Enter Password" required>
                                 </div>
-                                <input type="hidden" name="_csrf" value="{{csrftoken}}" />
+                                <input type="hidden" name="_csrf" value="{{csrfToken}}" />
 
                                 <div class="row">
                                     <div class="col-lg-4"><a href="/signup">New user? Sign Up</a>
@@ -172,6 +172,23 @@
             $("#page-wrapper").prepend("<div class=\"row\"><div class=\"col-lg-12\"><div class=\"alert alert-danger\">Cookies are not enabled on your browser. Please enable cookies in your browser preferences to continue.</div></div></div>");
         }
     });
+
+    function validateForm() {
+        const userName = document.getElementById('userName').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!userName) {
+            alert('Please enter your username');
+            return false;
+        }
+
+        if (!password) {
+            alert('Please enter your password');
+            return false;
+        }
+
+        return true;
+    }
     </script>
 
 </body>

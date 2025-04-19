@@ -1,3 +1,6 @@
+const express = require("express");
+const router = express.Router();
+const { userValidationRules, loginValidationRules } = require('../validators/userValidator');
 const SessionHandler = require("./session");
 const ProfileHandler = require("./profile");
 const BenefitsHandler = require("./benefits");
@@ -31,11 +34,11 @@ const index = (app, db) => {
 
     // Login form
     app.get("/login", sessionHandler.displayLoginPage);
-    app.post("/login", sessionHandler.handleLoginRequest);
+    app.post("/login", loginValidationRules, sessionHandler.handleLoginRequest);
 
     // Signup form
     app.get("/signup", sessionHandler.displaySignupPage);
-    app.post("/signup", sessionHandler.handleSignup);
+    app.post("/signup", userValidationRules, sessionHandler.handleSignup);
 
     // Logout page
     app.get("/logout", sessionHandler.displayLogoutPage);
