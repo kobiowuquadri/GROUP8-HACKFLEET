@@ -4,10 +4,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
+    <meta name="description" content="RetireEasy - Employee Retirement Savings Management">
     <meta name="author" content="">
 
-    <title>OWASP Node.js Goat Project</title>
+    <title>RetireEasy - {% block title %}{% endblock %}</title>
 
     <!-- Bootstrap core CSS -->
     <link href="/vendor/bootstrap/bootstrap.css" rel="stylesheet">
@@ -16,13 +16,200 @@
     <link href="/vendor/theme/sb-admin.css" rel="stylesheet">
     <link rel="stylesheet" href="/vendor/theme/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="/vendor/bootstrap/bootstrap-tour.css">
+    
+    <style>
+       
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #18bc9c;
+            --accent-color: #3498db;
+            --text-color: #2c3e50;
+            --light-bg: #f8f9fa;
+            --dark-bg: #34495e;
+        }
+
+        @media (max-width: 768px) {
+            .navbar-brand {
+                padding: 15px 10px;
+            }
+            .navbar-brand span {
+                font-size: 16px !important;
+            }
+            .side-nav {
+                position: static;
+                margin-top: 0;
+                width: 100%;
+                background-color: var(--primary-color);
+            }
+            .navbar-nav .dropdown-menu {
+                position: static;
+                float: none;
+                width: auto;
+                margin-top: 0;
+                background-color: transparent;
+                border: 0;
+                box-shadow: none;
+            }
+            .navbar-nav .dropdown-menu > li > a {
+                color: #fff;
+                padding: 10px 15px 10px 25px;
+            }
+            .navbar-nav .dropdown-menu > li > a:hover {
+                background-color: var(--dark-bg);
+                color: var(--secondary-color);
+            }
+            #page-wrapper {
+                padding: 15px;
+            }
+        }
+
+        /* General Enhancements */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+        }
+
+        .navbar-inverse {
+            background-color: var(--primary-color);
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-inverse .navbar-brand {
+            color: #fff;
+            transition: all 0.3s ease;
+            padding: 20px 15px;
+        }
+
+        .navbar-inverse .navbar-brand:hover {
+            color: var(--secondary-color);
+        }
+
+        .navbar-brand span {
+            display: block;
+            line-height: 1.2;
+        }
+
+        .side-nav {
+            background-color: var(--primary-color);
+            padding: 0;
+            border-radius: 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .side-nav li a {
+            color: #fff;
+            transition: all 0.3s ease;
+            padding: 15px 20px;
+            border-left: 3px solid transparent;
+        }
+
+        .side-nav li a:hover {
+            background-color: var(--dark-bg);
+            color: var(--secondary-color);
+            border-left: 3px solid var(--secondary-color);
+        }
+
+        .side-nav li a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .breadcrumb {
+            background-color: transparent;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .breadcrumb li {
+            font-size: 16px;
+            color: var(--text-color);
+        }
+
+        .breadcrumb li i {
+            margin-right: 5px;
+            color: var(--secondary-color);
+        }
+
+        #page-wrapper {
+            padding: 20px;
+            min-height: calc(100vh - 50px);
+            background-color: var(--light-bg);
+        }
+
+        .dropdown-menu {
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: none;
+            padding: 10px 0;
+        }
+
+        .dropdown-menu > li > a {
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            color: var(--text-color);
+        }
+
+        .dropdown-menu > li > a:hover {
+            background-color: var(--light-bg);
+            color: var(--secondary-color);
+        }
+
+        .user-dropdown .caret {
+            margin-left: 5px;
+        }
+
+        .navbar-toggle {
+            border: none;
+            background: transparent !important;
+        }
+
+        .navbar-toggle:hover {
+            background: transparent !important;
+        }
+
+        .navbar-toggle .icon-bar {
+            width: 25px;
+            height: 3px;
+            background-color: #fff;
+            border-radius: 2px;
+        }
+
+        /* Active Menu Item */
+        .side-nav li.active a {
+            background-color: var(--dark-bg);
+            color: var(--secondary-color);
+            border-left: 3px solid var(--secondary-color);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--dark-bg);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+    </style>
     <!--[if lt IE 9]><script src="/vendor/html5shiv.js"><![endif]-->
 </head>
 
 <body>
 
     <div id="wrapper">
-
         <!-- Sidebar -->
         <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
             <!-- Brand and toggle get grouped for better mobile display -->
@@ -35,77 +222,60 @@
                 </button>
                 <a class="navbar-brand" href="/dashboard">
                     <span style="font-size: x-large">
-                        <span class="fa fa-bullseye"></span>Retire<b>Easy</b>
+                        <i class="fa fa-bullseye"></i> Retire<b>Easy</b>
                     </span>
                     <span style="font-size: medium">Employee Retirement Savings Management</span>
                 </a>
             </div>
 
-            <!--  Nav Links-->
+            <!-- Nav Links -->
             <div class="collapse navbar-collapse navbar-ex1-collapse">
-                <!--  side nav -->
+                <!-- side nav -->
                 <ul class="nav navbar-nav side-nav">
                     {% if user.isAdmin %}
-                    <li><a id="benefits-menu-link" href="/benefits"><i class="fa fa-calendar"></i> Benefits</a>
-                    </li>
+                    <li><a id="benefits-menu-link" href="/benefits"><i class="fa fa-calendar"></i> Benefits</a></li>
                     {% else %}
-                    <li><a id="dashboard-menu-link" href="/"><i class="fa fa-dashboard"></i> Dashboard</a>
-                    </li>
-                    <li><a id="contributions-menu-link" href="/contributions"><i class="fa fa-bar-chart-o"></i> Contributions</a>
-                    </li>
-                    <li><a id="allocations-menu-link" href="/allocations/{{userId}}"><i class="fa fa-table"></i> Allocations</a>
-                    </li>
-                    <li><a id="memos-menu-link" href="/memos"><i class="fa fa-table"></i> Memos</a>
-                    </li>
-                    <li><a id="profile-menu-link" href="/profile"><i class="fa fa-user"></i> Profile</a>
-                    </li>
-                    <li><a id="learn-menu-link" target="_blank" href="/learn?url=https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/ira-401ks/v/traditional-iras"><i class="fa fa-edit"></i> Learning Resources</a>
-                    </li>
-                    <li><a id="research-menu-link" href="/research"><i class="fa fa-table"></i> Research</a>
-                    </li>
+                    <li><a id="dashboard-menu-link" href="/"><i class="fa fa-dashboard"></i> Dashboard</a></li>
+                    <li><a id="contributions-menu-link" href="/contributions"><i class="fa fa-bar-chart-o"></i> Contributions</a></li>
+                    <li><a id="allocations-menu-link" href="/allocations/{{userId}}"><i class="fa fa-table"></i> Allocations</a></li>
+                    <li><a id="memos-menu-link" href="/memos"><i class="fa fa-sticky-note"></i> Memos</a></li>
+                    <li><a id="profile-menu-link" href="/profile"><i class="fa fa-user"></i> Profile</a></li>
+                    <li><a id="learn-menu-link" target="_blank" href="/learn?url=https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/ira-401ks/v/traditional-iras"><i class="fa fa-graduation-cap"></i> Learning Resources</a></li>
+                    <li><a id="research-menu-link" href="/research"><i class="fa fa-search"></i> Research</a></li>
                     {% endif %}
-                    <li><a id="logout-menu-link" href="/logout"><i class="fa fa-power-off"></i> Logout</a>
-                    </li>
+                    <li><a id="logout-menu-link" href="/logout"><i class="fa fa-power-off"></i> Logout</a></li>
                 </ul>
 
                 <!-- top nav -->
                 <ul class="nav navbar-nav navbar-right navbar-user">
-
                     <li class="dropdown user-dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-user"></i> {{firstName}} {{lastName}} <b class="caret"></b></a>
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <i class="fa fa-user"></i> {{firstName}} {{lastName}} <b class="caret"></b>
+                        </a>
                         <ul class="dropdown-menu">
                             {% if !user.isAdmin %}
-                            <li><a href="/profile"><i class="fa fa-user"></i> Profile</a>
-                            </li>
+                            <li><a href="/profile"><i class="fa fa-user"></i> Profile</a></li>
                             <li class="divider"></li>
                             {% endif %}
-                            <li><a href="/logout"><i class="fa fa-power-off"></i> Log Out</a>
-                            </li>
+                            <li><a href="/logout"><i class="fa fa-power-off"></i> Log Out</a></li>
                         </ul>
                     </li>
                 </ul>
             </div>
-            <!-- /.navbar-collapse -->
         </nav>
 
         <div id="page-wrapper">
-
             <div class="row">
                 <div class="col-lg-12">
-                    <!-- <h1> <small>{% block title %}{% endblock %}</small></h1> -->
                     <ol class="breadcrumb">
-                        <li class="active"><i class="fa"></i> {% block title %}{% endblock %}</li>
+                        <li class="active"><i class="fa fa-home"></i> {% block title %}{% endblock %}</li>
                     </ol>
                 </div>
             </div>
-            <!-- /.row -->
 
             {% block content %}{% endblock %}
-
         </div>
-        <!-- /#page-wrapper -->
     </div>
-    <!-- /#wrapper -->
 
     <!-- Bootstrap core JavaScript -->
     <script src="/vendor/jquery.min.js"></script>
@@ -115,7 +285,6 @@
     <!-- Page Specific Plugins -->
     <script src="/vendor/chart/raphael-min.js"></script>
     <script src="/vendor/chart/morris-0.4.3.min.js"></script>
-
     <script src="/js/chart/chart-data-morris.js"></script>
 
     <!-- tour steps related js -->
@@ -126,6 +295,28 @@
     {{script}}
     {% endfor %}
 
+    <script>
+    $(document).ready(function() {
+        // Add active class to current menu item
+        var currentPath = window.location.pathname;
+        $('.side-nav li a').each(function() {
+            if ($(this).attr('href') === currentPath) {
+                $(this).parent().addClass('active');
+            }
+        });
+
+        // Smooth scroll for sidebar
+        $('.side-nav a').on('click', function(e) {
+            if (this.hash !== '') {
+                e.preventDefault();
+                const hash = this.hash;
+                $('html, body').animate({
+                    scrollTop: $(hash).offset().top
+                }, 800);
+            }
+        });
+    });
+    </script>
 </body>
 
 </html>
