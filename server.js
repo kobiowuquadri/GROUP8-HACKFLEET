@@ -4,7 +4,7 @@ const express = require("express");
 const favicon = require("serve-favicon");
 const bodyParser = require("body-parser");
 const session = require("express-session");
-const csrf = require('csurf');
+const csurf = require('csurf');
 const consolidate = require("consolidate"); // Templating library adapter for Express
 const swig = require("swig");
 const helmet = require("helmet");
@@ -15,6 +15,7 @@ const fs = require("fs");
 const path = require("path");
 const marked = require("marked");
 const nosniff = require('dont-sniff-mimetype');
+const expressLayouts = require('express-ejs-layouts');
 
 // Import security middleware
 const { 
@@ -164,7 +165,7 @@ MongoClient.connect(db, mongoOptions, (err, client) => {
     });
 
     // Enable CSRF protection
-    app.use(csrf());
+    app.use(csurf());
     app.use((req, res, next) => {
         res.locals.csrfToken = req.csrfToken();
         next();
@@ -175,9 +176,12 @@ MongoClient.connect(db, mongoOptions, (err, client) => {
     app.use('/auth/', authLimiter);
 
     // Register templating engine
-    app.engine(".html", consolidate.swig);
-    app.set("view engine", "html");
-    app.set("views", `${__dirname}/app/views`);
+    app.set('view engine', 'ejs');
+    app.set('views', path.join(__dirname, 'app/views'));
+    app.use(expressLayouts);
+    app.set('layout', 'layout');
+    app.set("layout extractScripts", true);
+    app.set("layout extractStyles", true);
     
     // Serve static files
     app.use(express.static(`${__dirname}/app/assets`));
