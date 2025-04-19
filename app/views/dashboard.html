@@ -1,7 +1,136 @@
 {% extends "./layout.html" %} {% block title %}Dashboard{% endblock %} {% block content %}
+<style>
+    .dashboard-panel {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    .dashboard-panel:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    .panel-heading {
+        border-radius: 10px 10px 0 0 !important;
+        padding: 20px;
+    }
+    .panel-danger .panel-heading {
+        background-color: #e74c3c !important;
+    }
+    .panel-success .panel-heading {
+        background-color: #2ecc71 !important;
+    }
+    .panel-warning .panel-heading {
+        background-color: #f39c12 !important;
+    }
+    .panel-primary .panel-heading {
+        background-color: #3498db !important;
+    }
+    .announcement-text {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #fff;
+        margin-bottom: 15px;
+    }
+    .announcement-heading {
+        font-size: 24px;
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 10px;
+    }
+    .panel-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid #eee;
+        padding: 15px;
+        border-radius: 0 0 10px 10px;
+    }
+    .announcement-bottom {
+        color: #2c3e50;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .announcement-bottom:hover {
+        background-color: #f1f1f1;
+        color: #18bc9c;
+    }
+    .fa-5x {
+        color: #fff;
+        opacity: 0.8;
+    }
+    #morris-chart-area {
+        height: 300px;
+    }
+    @media (max-width: 768px) {
+        .col-lg-4 {
+            margin-bottom: 20px;
+        }
+        .announcement-text {
+            font-size: 14px;
+        }
+        .announcement-heading {
+            font-size: 20px;
+        }
+        .fa-5x {
+            font-size: 3em;
+        }
+    }
+    .stat-card {
+        padding: 20px;
+        text-align: center;
+    }
+    .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 5px;
+    }
+    .stat-label {
+        font-size: 14px;
+        color: rgba(255,255,255,0.8);
+    }
+    .chart-container {
+        margin-bottom: 30px;
+    }
+    .chart-title {
+        color: #fff;
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+    .chart-wrapper {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    #morris-chart-area, #morris-chart-line {
+        height: 300px;
+    }
+    .chart-legend {
+        margin-top: 15px;
+        text-align: center;
+    }
+    .chart-legend span {
+        display: inline-block;
+        margin: 0 10px;
+        font-size: 12px;
+    }
+    .chart-legend i {
+        margin-right: 5px;
+    }
+    @media (max-width: 768px) {
+        .chart-wrapper {
+            padding: 10px;
+        }
+        #morris-chart-area, #morris-chart-line {
+            height: 250px;
+        }
+    }
+</style>
+
 <div class="row">
     <div class="col-lg-12">
-        <div class="panel panel-danger">
+        <div class="dashboard-panel panel panel-danger">
             <div class="panel-heading">
                 <div class="row">
                     <div class="col-xs-1">
@@ -13,7 +142,7 @@
                     </div>
                 </div>
             </div>
-            <a href="/contributions">
+            <a href="/contributions" style="text-decoration: none;">
                 <div class="panel-footer announcement-bottom">
                     <div class="row">
                         <div class="col-xs-6">
@@ -28,91 +157,197 @@
         </div>
     </div>
 </div>
+
 <div class="row">
     <div class="col-lg-4">
-        <div class="panel panel-success">
+        <div class="dashboard-panel panel panel-success">
             <div class="panel-heading">
+                <div class="stat-card">
+                    <div class="stat-value">$89,925.12</div>
+                    <div class="stat-label">Total Retirement Savings</div>
+                </div>
+            </div>
+            <div class="panel-footer">
                 <div class="row">
-                    <div class="col-xs-1">
-                        <i class="fa fa-usd fa-5x"></i>
-                    </div>
-                    <div class="col-xs-11">
-                        <p class="announcement-heading text-right">$89,925.12</p>
-                        <p class="announcement-text">Total Retirement Savings</p>
+                    <div class="col-xs-12 text-center">
+                        <i class="fa fa-usd fa-2x"></i>
                     </div>
                 </div>
             </div>
-            <a href="#">
-                <div class="panel-footer announcement-bottom">
-                    <div class="row">
-                        <div class="col-xs-3">
-
-                        </div>
-                        <div class="col-xs-9 text-right">
-
-                        </div>
-                    </div>
-                </div>
-            </a>
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="panel panel-warning">
+        <div class="dashboard-panel panel panel-warning">
             <div class="panel-heading">
+                <div class="stat-card">
+                    <div class="stat-value">$20,600</div>
+                    <div class="stat-label">Required Retirement Income / Month</div>
+                </div>
+            </div>
+            <div class="panel-footer">
                 <div class="row">
-                    <div class="col-xs-1">
-                        <i class="fa fa-check fa-5x"></i>
-                    </div>
-                    <div class="col-xs-11">
-                        <p class="announcement-heading text-right">$20,600</p>
-                        <p class="announcement-text">Required Retirement Income / Month</p>
+                    <div class="col-xs-12 text-center">
+                        <i class="fa fa-check fa-2x"></i>
                     </div>
                 </div>
             </div>
-            <a href="#">
-                <div class="panel-footer announcement-bottom">
-
-                </div>
-            </a>
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="panel panel-danger">
+        <div class="dashboard-panel panel panel-danger">
             <div class="panel-heading">
+                <div class="stat-card">
+                    <div class="stat-value">$15,630</div>
+                    <div class="stat-label">Estimated Retirement Income / Month</div>
+                </div>
+            </div>
+            <div class="panel-footer">
                 <div class="row">
-                    <div class="col-xs-1">
-                        <i class="fa fa-tasks fa-5x"></i>
-                    </div>
-                    <div class="col-xs-11">
-                        <p class="announcement-heading text-right">$15,630</p>
-                        <p class="announcement-text">Estimated Retirement Income / Month</p>
+                    <div class="col-xs-12 text-center">
+                        <i class="fa fa-tasks fa-2x"></i>
                     </div>
                 </div>
             </div>
-            <a href="#">
-                <div class="panel-footer announcement-bottom">
-
-                </div>
-            </a>
         </div>
     </div>
-
 </div>
-<!-- /.row -->
 
 <div class="row">
     <div class="col-lg-12">
-        <div class="panel panel-primary">
+        <div class="dashboard-panel panel panel-primary">
             <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-bar-chart-o"></i> Portfolio Performance Statistics</h3>
+                <h3 class="panel-title">
+                    <i class="fa fa-line-chart"></i> Portfolio Performance Statistics
+                </h3>
             </div>
             <div class="panel-body">
-                <div id="morris-chart-area"></div>
+                <div class="chart-wrapper">
+                    <div id="morris-chart-area"></div>
+                    <div class="chart-legend">
+                        <span><i class="fa fa-circle" style="color: #3498db"></i> Portfolio Value</span>
+                        <span><i class="fa fa-circle" style="color: #2ecc71"></i> Market Index</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<!-- /.row -->
 
+<div class="row">
+    <div class="col-lg-12">
+        <div class="dashboard-panel panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <i class="fa fa-area-chart"></i> Retirement Savings Trend
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="chart-wrapper">
+                    <div id="morris-chart-line"></div>
+                    <div class="chart-legend">
+                        <span><i class="fa fa-circle" style="color: #e74c3c"></i> Your Savings</span>
+                        <span><i class="fa fa-circle" style="color: #f39c12"></i> Target Savings</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<script>
+$(document).ready(function() {
+    // Initialize Area Chart
+    Morris.Area({
+        element: 'morris-chart-area',
+        data: [
+            { y: '2010', a: 100, b: 90 },
+            { y: '2011', a: 75,  b: 65 },
+            { y: '2012', a: 50,  b: 40 },
+            { y: '2013', a: 75,  b: 65 },
+            { y: '2014', a: 50,  b: 40 },
+            { y: '2015', a: 75,  b: 65 },
+            { y: '2016', a: 100, b: 90 }
+        ],
+        xkey: 'y',
+        ykeys: ['a', 'b'],
+        labels: ['Portfolio Value', 'Market Index'],
+        lineColors: ['#3498db', '#2ecc71'],
+        pointSize: 2,
+        hideHover: 'auto',
+        resize: true,
+        gridTextColor: '#999',
+        gridTextSize: 12,
+        fillOpacity: 0.1
+    });
+
+    // Initialize Line Chart
+    Morris.Line({
+        element: 'morris-chart-line',
+        data: [
+            { y: '2010', a: 50000, b: 60000 },
+            { y: '2011', a: 55000, b: 65000 },
+            { y: '2012', a: 60000, b: 70000 },
+            { y: '2013', a: 65000, b: 75000 },
+            { y: '2014', a: 70000, b: 80000 },
+            { y: '2015', a: 75000, b: 85000 },
+            { y: '2016', a: 80000, b: 90000 }
+        ],
+        xkey: 'y',
+        ykeys: ['a', 'b'],
+        labels: ['Your Savings', 'Target Savings'],
+        lineColors: ['#e74c3c', '#f39c12'],
+        pointSize: 3,
+        hideHover: 'auto',
+        resize: true,
+        gridTextColor: '#999',
+        gridTextSize: 12,
+        lineWidth: 2,
+        smooth: true
+    });
+
+    // Make charts responsive
+    $(window).on('resize', function() {
+        $('#morris-chart-area').empty();
+        $('#morris-chart-line').empty();
+        Morris.Area({
+            element: 'morris-chart-area',
+            data: [
+                { y: '2010', a: 100, b: 90 },
+                { y: '2011', a: 75,  b: 65 },
+                { y: '2012', a: 50,  b: 40 },
+                { y: '2013', a: 75,  b: 65 },
+                { y: '2014', a: 50,  b: 40 },
+                { y: '2015', a: 75,  b: 65 },
+                { y: '2016', a: 100, b: 90 }
+            ],
+            xkey: 'y',
+            ykeys: ['a', 'b'],
+            labels: ['Portfolio Value', 'Market Index'],
+            lineColors: ['#3498db', '#2ecc71'],
+            pointSize: 2,
+            hideHover: 'auto',
+            resize: true
+        });
+        Morris.Line({
+            element: 'morris-chart-line',
+            data: [
+                { y: '2010', a: 50000, b: 60000 },
+                { y: '2011', a: 55000, b: 65000 },
+                { y: '2012', a: 60000, b: 70000 },
+                { y: '2013', a: 65000, b: 75000 },
+                { y: '2014', a: 70000, b: 80000 },
+                { y: '2015', a: 75000, b: 85000 },
+                { y: '2016', a: 80000, b: 90000 }
+            ],
+            xkey: 'y',
+            ykeys: ['a', 'b'],
+            labels: ['Your Savings', 'Target Savings'],
+            lineColors: ['#e74c3c', '#f39c12'],
+            pointSize: 3,
+            hideHover: 'auto',
+            resize: true
+        });
+    });
+});
+</script>
 {% endblock %}
