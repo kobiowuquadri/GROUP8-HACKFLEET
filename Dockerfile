@@ -2,8 +2,9 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm ci
 COPY . .
+RUN npm run build
 
 # Production stage
 FROM node:18-alpine
@@ -13,19 +14,16 @@ WORKDIR /app
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 RUN chown -R appuser:appgroup /app
 
-# Install production dependencies
+# Copy built files from builder
 COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
 COPY --from=builder --chown=appuser:appgroup /app/app ./app
 COPY --from=builder --chown=appuser:appgroup /app/config ./config
 COPY --from=builder --chown=appuser:appgroup /app/server.js ./
-COPY --from=builder --chown=appuser:appgroup /app/artifacts ./artifacts
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=4000
-ENV LOG_LEVEL=info
-ENV LOG_FORMAT=json
 
 # Switch to non-root user
 USER appuser

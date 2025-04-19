@@ -25,21 +25,32 @@ function SessionHandler(db) {
     };
 
     this.isAdminUserMiddleware = (req, res, next) => {
-        if (req.session.userId) {
+        if (req.session && req.session.userId) {
             return userDAO.getUserById(req.session.userId, (err, user) => {
-               return user && user.isAdmin ? next() : res.redirect("/login");
+                if (err) return next(err);
+                if (user && user.isAdmin) {
+                    req.user = user;
+                    return next();
+                }
+                req.session.destroy();
+                return res.redirect("/login");
             });
         }
-        console.log("redirecting to login");
         return res.redirect("/login");
-
     };
 
     this.isLoggedInMiddleware = (req, res, next) => {
-        if (req.session.userId) {
-            return next();
+        if (req.session && req.session.userId) {
+            return userDAO.getUserById(req.session.userId, (err, user) => {
+                if (err) return next(err);
+                if (user) {
+                    req.user = user;
+                    return next();
+                }
+                req.session.destroy();
+                return res.redirect("/login");
+            });
         }
-        console.log("redirecting to login");
         return res.redirect("/login");
     };
 
@@ -88,6 +99,7 @@ function SessionHandler(db) {
 
             req.session.regenerate(() => {
                 req.session.userId = user._id;
+                req.user = user;
                 return res.redirect(user.isAdmin ? "/benefits" : "/dashboard");
             });
         });
@@ -218,20 +230,19 @@ function SessionHandler(db) {
     };
 
     this.displayWelcomePage = (req, res, next) => {
-        let userId;
-
-        if (!req.session.userId) {
-            console.log("welcome: Unable to identify user...redirecting to login");
+        if (!req.session || !req.session.userId) {
             return res.redirect("/login");
         }
 
-        userId = req.session.userId;
-
-        userDAO.getUserById(userId, (err, doc) => {
+        userDAO.getUserById(req.session.userId, (err, user) => {
             if (err) return next(err);
-            doc.userId = userId;
+            if (!user) {
+                req.session.destroy();
+                return res.redirect("/login");
+            }
+            user.userId = user._id;
             return res.render("dashboard", {
-                ...doc,
+                ...user,
                 environmentalScripts
             });
         });

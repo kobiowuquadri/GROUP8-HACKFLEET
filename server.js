@@ -4,19 +4,17 @@ const express = require("express");
 const favicon = require("serve-favicon");
 const bodyParser = require("body-parser");
 const session = require("express-session");
-const MongoStore = require("connect-mongo");
 const csrf = require('csurf');
-const consolidate = require("consolidate");
+const consolidate = require("consolidate"); // Templating library adapter for Express
 const swig = require("swig");
 const helmet = require("helmet");
-const { MongoClient } = require("mongodb");
+const MongoClient = require("mongodb").MongoClient; // Driver for connecting to MongoDB
 const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const marked = require("marked");
 const nosniff = require('dont-sniff-mimetype');
-const winston = require("winston");
 
 // Import security middleware
 const { 
@@ -27,25 +25,29 @@ const {
     securityHeaders 
 } = require('./app/middleware/security');
 
-const app = express();
+const { securityLogger } = require('./app/utils/logger');
+
+const app = express(); 
 const routes = require("./app/routes");
 const { port, db, cookieSecret, mongoUser, mongoPass } = require("./config/config");
 
-// Configure logging
-const logger = winston.createLogger({
-    level: process.env.LOG_LEVEL || 'info',
-    format: process.env.LOG_FORMAT === 'json' ? 
-        winston.format.json() : 
-        winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.printf(({ timestamp, level, message }) => {
-                return `${timestamp} [${level}]: ${message}`;
-            })
-        ),
-    transports: [
-        new winston.transports.Console()
-    ]
-});
+// Load SSL certificates
+const httpsOptions = {
+    key: fs.readFileSync(path.resolve(__dirname, "./artifacts/cert/server.key")),
+    cert: fs.readFileSync(path.resolve(__dirname, "./artifacts/cert/server.crt")),
+    // Additional SSL security settings
+    minVersion: 'TLSv1.2',
+    ciphers: [
+        'ECDHE-ECDSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES128-GCM-SHA256',
+        'ECDHE-ECDSA-AES256-GCM-SHA384',
+        'ECDHE-RSA-AES256-GCM-SHA384',
+        'DHE-RSA-AES128-GCM-SHA256',
+        'DHE-RSA-AES256-GCM-SHA384'
+    ].join(':'),
+    honorCipherOrder: true,
+    secureOptions: require('constants').SSL_OP_NO_SSLv3 | require('constants').SSL_OP_NO_TLSv1 | require('constants').SSL_OP_NO_TLSv1_1
+};
 
 // MongoDB connection options
 const mongoOptions = {
@@ -76,64 +78,61 @@ if (process.env.MONGO_SSL === 'true') {
         mongoOptions.sslValidate = true;
         mongoOptions.sslCA = fs.readFileSync(path.resolve(__dirname, process.env.MONGO_SSL_CA || "./artifacts/cert/mongodb.pem"));
     } catch (err) {
-        logger.warn('MongoDB SSL configuration skipped - certificates not found');
+        console.warn('MongoDB SSL configuration skipped - certificates not found');
+        securityLogger.logSecurityEvent('MongoDB SSL skipped', { reason: 'Certificates not found' });
     }
 }
 
 // Connect to MongoDB with proper error handling
-MongoClient.connect(db, mongoOptions, async (err, client) => {
+MongoClient.connect(db, mongoOptions, (err, client) => {
     if (err) {
-        logger.error("Error connecting to database", { error: err });
+        securityLogger.logError(err, 'Database connection');
+        console.error('MongoDB connection error:', err);
         process.exit(1);
     }
 
-    const database = client.db();
-    logger.info("Connected to the database");
+    const db = client.db('nodegoat');
+    console.log('Connected to MongoDB successfully');
 
-    // Security headers
-    app.use(helmet());
-    app.use(helmet.contentSecurityPolicy({
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'"]
+    // Verify database connection
+    db.command({ ping: 1 }, (err) => {
+        if (err) {
+            securityLogger.logError(err, 'Database ping');
+            console.error('MongoDB ping failed:', err);
+            process.exit(1);
         }
-    }));
-    app.use(nosniff());
+        console.log('MongoDB connection verified');
+    });
+
+    // Apply security middleware
     app.use(securityHeaders);
+    app.use(nosniff());
+    app.use(favicon(__dirname + "/app/assets/favicon.ico"));
 
-    // Express middleware
+    // Express middleware to populate "req.body" so we can access POST variables
     app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(express.static(path.join(__dirname, 'app/assets')));
-    app.use(favicon(path.join(__dirname, 'app/assets/favicon.ico')));
+    app.use(bodyParser.urlencoded({
+        // Mandatory in Express v4
+        extended: false
+    }));
 
-    // Session configuration
+    // Enable session management using express middleware
     app.use(session({
         secret: cookieSecret,
-        store: new MongoStore({
-            client,
-            dbName: database.databaseName,
-            collection: 'sessions',
-            ttl: 14 * 24 * 60 * 60, // 14 days
-            autoRemove: 'native'
-        }),
         name: 'sessionId',
         saveUninitialized: false,
         resave: false,
         cookie: {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true,
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             sameSite: 'strict',
             path: '/',
             domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
         },
-        rolling: true,
-        proxy: true,
-        unset: 'destroy'
+        rolling: true, // Reset maxAge on every response
+        proxy: true, // Trust the reverse proxy
+        unset: 'destroy' // Destroy session when unset
     }));
 
     // Session fixation protection
@@ -179,25 +178,33 @@ MongoClient.connect(db, mongoOptions, async (err, client) => {
     app.engine(".html", consolidate.swig);
     app.set("view engine", "html");
     app.set("views", `${__dirname}/app/views`);
+    app.use(express.static(`${__dirname}/app/assets`));
 
-    // Initializing marked library
+    // Configure marked for secure markdown processing
     marked.setOptions({
-        sanitize: true
+        sanitize: true,
+        sanitizer: (text) => {
+            return text.replace(/[&<>"']/g, (match) => {
+                const escape = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                };
+                return escape[match];
+            });
+        }
     });
     app.locals.marked = marked;
 
     // Application routes
-    routes(app, database);
+    routes(app, db);
 
     // Template system setup
     swig.setDefaults({
+        autoescape: true,
         cache: false
-    });
-
-    // Error handling middleware
-    app.use((err, req, res, next) => {
-        logger.error("Unhandled error", { error: err });
-        res.status(500).json({ error: "Internal server error" });
     });
 
     // Health check endpoint
@@ -205,8 +212,36 @@ MongoClient.connect(db, mongoOptions, async (err, client) => {
         res.status(200).json({ status: 'ok' });
     });
 
-    // Start server
-    http.createServer(app).listen(port, () => {
-        logger.info(`Server listening on port ${port}`);
+    // Error handling
+    app.use(errorHandler);
+
+    // Redirect HTTP to HTTPS with HSTS
+    const httpApp = express();
+    httpApp.use(helmet.hsts({
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }));
+    httpApp.get('*', (req, res) => {
+        res.redirect(`https://${req.headers.host}${req.url}`);
     });
+    http.createServer(httpApp).listen(80);
+
+    // Start HTTPS server with additional security headers
+    const httpsServer = https.createServer(httpsOptions, app);
+    httpsServer.listen(port, () => {
+        console.log(`Express https server listening on port ${port}`);
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (err) => {
+        securityLogger.logError(err, 'Uncaught Exception');
+        process.exit(1);
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+        securityLogger.logError(reason, 'Unhandled Rejection');
+    });
+
 });
